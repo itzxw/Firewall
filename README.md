@@ -1,4 +1,3 @@
-![GIF](https://media1.tenor.com/m/wJoIg9kMUB0AAAAC/duck-spin.gif)
 # Userspace C Firewall
 
 A custom firewall running in userspace, written entirely in C. The project intercepts, analyzes, and filters network traffic captured through a virtual `tun0` interface, using advanced routing rules on Linux.
