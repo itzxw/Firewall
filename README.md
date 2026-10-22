@@ -40,6 +40,7 @@ The code is divided into three modules:
 
 ### Installation
 Make sure you have the necessary dependencies; otherwise, run the commands below:
+
 ```bash
 # Debian/Ubuntu
 sudo apt install build-essential iproute2
@@ -54,7 +55,7 @@ sudo pacman -S base-devel iproute2
 # optional dependencies for testing (Debian/Ubuntu)
 sudo apt install netcat-openbsd tcpdump python3-scapy
 ```
-With the dependencies installed, clone the repository and start the firewall
+With the dependencies installed, clone the repository and start the firewall:
 ```bash
 git clone https://github.com/itzxw/psel
 cd psel
@@ -63,11 +64,27 @@ git checkout my-firewall
 ```bash
 chmod +x firewall.sh
 make
-sudo ./firewall.sh start
+sudo ./firewall.sh -v start
 ```
+
 ## Testing the firewall
 
 Since the firewall only sees traffic routed to the `10.0.0.0/24` network (see [Scope and important limitations](#scope-and-important-limitations)), test traffic must be generated explicitly against the `tun0` interface or the IP `10.0.0.1`. Some ways to do that:
+
+**Configuring Rules**
+
+Modify the `conf.rc` file by adding your own rules in the following format:
+
+```bash
+[action] [ip]/[mask] [verbose]
+Ex: deny 209.22.32.1 verbose
+```
+Actions can be: `tarpit`, `allow`, `deny`. The `mask` field (to specify a network mask) and `verbose` field (to log that IP's traffic to `/var/log/my_firewall.log`) are optional. The `forbidden_words` field defines a list of forbidden words (case sensitive); to add a word to the list, insert it after the last word in the list, or after `forbidden_words` if it's the first one.
+Example:
+
+```
+forbidden_words hack exploit payload
+```
 
 **Ping (tests the `ALLOW` action with an ICMP reply):**
 ```bash
@@ -87,8 +104,9 @@ sudo tcpdump -i tun0 -vv
 **Generating custom packets** (spoofed source IP, specific payload, arbitrary TCP flags), useful for testing rules and the malicious payload filter in a controlled way, using [Scapy](https://scapy.net/):
 ```python
 from scapy.all import *
-send(IP(src="10.0.0.99", dst="10.0.0.1")/TCP(dport=80, flags="S"), iface="tun0")
+send(IP(src="10.0.0.99", dst="10.0.0.1")/TCP(dport=80, flags="S")/Raw(load=b"gonna hack your pc lol"), iface="tun0")
 ```
+
 
 ## References
 - [RFC 1071 - Computing the Internet checksum](https://datatracker.ietf.org/doc/html/rfc1071)
