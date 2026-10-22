@@ -188,24 +188,32 @@ int main() {
         
         int malformed = 0;
 
-        if(ip->protocol == IPPROTO_TCP || ip->protocol == IPPROTO_UDP){
-            if(check_payload((unsigned char *)buffer, nread, forbidden_words, forbidden_count) == 1){  // verifica se existe alguma palavra maliciosa no payload
-                printf("conexao malicionsa pacote dropado\n");
-                continue;
-            }
-        }
-
         char src_ip[INET_ADDRSTRLEN];
         char dst_ip[INET_ADDRSTRLEN];                                
         inet_ntop(AF_INET, &ip->saddr, src_ip, INET_ADDRSTRLEN);
         inet_ntop(AF_INET, &ip->daddr, dst_ip, INET_ADDRSTRLEN);
+
+        if(ip->protocol == IPPROTO_TCP || ip->protocol == IPPROTO_UDP){
+            if(check_payload((unsigned char *)buffer, nread, forbidden_words, forbidden_count) == 1){ // verifica se existe alguma palavra maliciosa no payload
+
+                printf("[!] IP %s     Conexao malicionsa, pacote dropado!\n", src_ip);
+                continue;
+            }
+        }
 
         int processed_packet = 0;
         
         for(int i = 0; i < total_rules; i++){
 
             // verifica se o ip do pacote ta na lista ou pertence a uma rede da lista
-            if(ip->saddr == ip_list[i].ip || check_mask(ip_list[i].mask, ip->saddr, ip_list[i].ip)){  
+            int match = 0;
+            if(ip_list[i].mask == 0){
+                match = (ip->saddr == ip_list[i].ip);
+            } else {
+                match = (check_mask(ip_list[i].mask, ip->saddr, ip_list[i].ip));
+            }
+
+            if(match){  
 
                 switch (ip_list[i].act)
                 {
@@ -297,7 +305,7 @@ int main() {
                         struct icmphdr *icmph = (struct icmphdr *)(buffer + ip_header_len);
 
                         if(icmph->type == ICMP_ECHO){
-                            printf("pacote icmp recebido");
+                            printf("IP %s pacote icmp recebido \n", src_ip);
                             icmph->type = ICMP_ECHOREPLY;
 
                             uint32_t original_saddr = ip->saddr;
